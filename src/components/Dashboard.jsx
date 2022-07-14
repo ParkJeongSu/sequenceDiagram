@@ -18,9 +18,11 @@ import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import { mainListItems, secondaryListItems } from "./listItems";
-import { useEffect } from 'react';
-import mermaid from 'mermaid';
-
+import { useEffect } from "react";
+import mermaid from "mermaid";
+import TextField from "@mui/material/TextField";
+import Sidebar from "./sidebar";
+import axios from "axios";
 
 function Copyright(props) {
   return (
@@ -90,16 +92,89 @@ const mdTheme = createTheme();
 
 function DashboardContent(props) {
   const [open, setOpen] = React.useState(true);
+  const [sequenceText, setsequenceText] = React.useState("");
+  const [sidebarList, setsidebarList] = React.useState(null);
+
+  const getSidebar = async () => {
+    try {
+      const response = await axios.get("http://localhost:8080/sequences");
+      setsidebarList(response);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const getsequenceText = async (id) => {
+    try {
+      const response = await axios.get("http://localhost:8080/sequence/" + id);
+      setsequenceText(response);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
   const toggleDrawer = () => {
     setOpen(!open);
   };
+
+  const nameInput = React.useRef();
+  const insertSvg = function (svgCode) {
+    nameInput.current.innerHTML = svgCode;
+    //console.log(svgCode);
+  };
+  const handleChange = (event) => {
+    event.preventDefault();
+
+    setsequenceText(event.target.value);
+
+    // let graphDefinition = sequenceText;
+    // mermaid.mermaidAPI.render(
+    //   "graphDiv",
+    //   graphDefinition,
+    //   insertSvg
+    // );
+  };
+
+  const handleClick = (id) => {
+    getsequenceText(id);
+    // let graphDefinition = sequenceText;
+    // mermaid.mermaidAPI.render(
+    //   "graphDiv",
+    //   graphDefinition,
+    //   insertSvg
+    // );
+  };
   useEffect(() => {
-    console.log('컴포넌트가 화면에 나타남');
-    mermaid.initialize({startOnLoad:true});
+    console.log("맨 처음 렌더링될 때 한 번만 실행");
+    mermaid.initialize({ startOnLoad: true });
+  }, []);
+
+  useEffect(() => {
+    console.log("컴포넌트가 화면에 나타남");
+    // getSidebar();
+
     return () => {
-      console.log('컴포넌트가 화면에서 사라짐');
+      console.log("컴포넌트가 화면에서 사라짐");
     };
   });
+
+  useEffect(() => {
+    if (sequenceText === undefined || sequenceText === "") 
+    {
+    } 
+    else {
+      try {
+        mermaid.mermaidAPI.render("test", sequenceText, insertSvg);
+        // var parseable = mermaid.mermaidAPI.parse(sequenceText);
+        // if (parseable) 
+        // {
+        //   mermaid.mermaidAPI.render("test", sequenceText, insertSvg);
+        // }
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  }, [sequenceText]);
 
   return (
     <ThemeProvider theme={mdTheme}>
@@ -154,9 +229,8 @@ function DashboardContent(props) {
           </Toolbar>
           <Divider />
           <List component="nav">
-            {mainListItems}
+            {/* <Sidebar sidebarList={sidebarList} onClick={handleClick} ></Sidebar> */}
             <Divider sx={{ my: 1 }} />
-            {secondaryListItems}
           </List>
         </Drawer>
         <Box
@@ -177,21 +251,29 @@ function DashboardContent(props) {
               {/* mermaid diagram */}
               <Grid item xs={12}>
                 <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
-                    <div className="mermaid">
-                        {props.test}
-                    </div>
+                  <div ref={nameInput} className="mermaid">
+                    {sequenceText}
+                  </div>
                 </Paper>
               </Grid>
-              {/* mermaid textra */}
+              {/* mermaid TextField */}
               <Grid item xs={12} md={12} lg={12}>
                 <Paper
                   sx={{
                     p: 2,
                     display: "flex",
                     flexDirection: "column",
-                    height: 240,
+                    //height: 240,
                   }}
-                ></Paper>
+                >
+                  <TextField
+                    fullWidth
+                    onChange={handleChange}
+                    label="sequenceText"
+                    id="fullWidth"
+                    multiline
+                  />
+                </Paper>
               </Grid>
             </Grid>
             <Copyright sx={{ pt: 4 }} />
@@ -203,5 +285,5 @@ function DashboardContent(props) {
 }
 
 export default function Dashboard(props) {
-  return <DashboardContent test={props.test}/>;
+  return <DashboardContent />;
 }
