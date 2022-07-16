@@ -18,14 +18,14 @@ import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import SaveIcon from '@mui/icons-material/Save';
-import { mainListItems, secondaryListItems } from "./listItems";
 import { useEffect } from "react";
 import mermaid from "mermaid";
 import TextField from "@mui/material/TextField";
 import Sidebar from "./sidebar";
 import axios from "axios";
-import { Button } from "@mui/material";
-
+import { makeStyles } from "@material-ui/core/styles";
+import Autocomplete from '@mui/material/Autocomplete';
+import Stack from '@mui/material/Stack';
 function Copyright(props) {
   return (
     <Typography
@@ -99,6 +99,19 @@ function DashboardContent(props) {
   const [sidebarList, setsidebarList] = React.useState(null);
   const [id, setId] = React.useState(null);
   const [sequenceMenuName, setsequenceMenuName] = React.useState(null);
+  const [messageList, setMessageList] = React.useState([]);
+
+  const [messageId, setMessageId] = React.useState(null);
+  const [messageExampleContent, setMessageExampleContent] = React.useState("");
+  const [messageDescription, setMessageDescription] = React.useState("");
+
+  const nameInput = React.useRef();
+  const useStyles = makeStyles({
+    white:{
+      backgroundColor:'white'
+    }
+  });
+  const classes = useStyles();
 
   const getSidebar = async () => {
     try {
@@ -114,7 +127,8 @@ function DashboardContent(props) {
       const response = await axios.get("http://localhost:8080/sequence/" + id);
       setId(response.data.id);
       setsequenceMenuName(response.data.sequenceMenuName);
-      setsequenceText(response.data.diagramText);
+      setsequenceText(response.data.diagramText === null ? '' :response.data.diagramText );
+      setlastSequenceText(response.data.diagramText === null ? '' :response.data.diagramText);
     } catch (e) {
       console.log(e);
     }
@@ -123,7 +137,7 @@ function DashboardContent(props) {
   const putSequenceText = async (id) => {
     try {
       let data ={
-        id : id,
+        id : messageId,
         sequenceMenuName: sequenceMenuName,
         sequenceText : sequenceText
       }
@@ -136,11 +150,73 @@ function DashboardContent(props) {
     }
   };
 
+  const putMessageDefinition = async (id) => {
+    try {
+      let data ={
+        id : id,
+        messageExampleContent: messageExampleContent,
+        messageDescription : messageDescription
+      }
+      const response = await axios.put("http://localhost:8080/message/" + id,data);
+      setMessageId(response.data.id);
+      setMessageExampleContent(response.data.sequenceMenuName);
+      setMessageDescription(response.data.diagramText);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const createSequenceMenuName = async (sequenceMenuName) => {
+    try {
+      let data ={
+        sequenceMenuName: sequenceMenuName
+      }
+      const response = await axios.post("http://localhost:8080/sequence/",data);
+      setsidebarList(response);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const createMessageName = async (messageName) => {
+    try {
+      let data ={
+        messageName: messageName
+      }
+      const response = await axios.post("http://localhost:8080/message/",data);
+      setMessageList(response.data);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const getMessageList = async () => {
+    try {
+      const response = await axios.get("http://localhost:8080/messages/");
+      setMessageList(response.data);
+      console.log(response);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+  
+  const getMessagebyMessageName = async (messageName) => {
+    try {
+      const response = await axios.get("http://localhost:8080/message/"+messageName);
+      setMessageId(response.data.id);
+      setMessageExampleContent(response.data.exampleMessageContent);
+      setMessageDescription(response.data.messageDescription)
+      console.log(response);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
   const toggleDrawer = () => {
     setOpen(!open);
   };
 
-  const nameInput = React.useRef();
+  
   const insertSvg = function (svgCode) {
     nameInput.current.innerHTML = svgCode;
     setlastSequenceText(sequenceText);
@@ -155,6 +231,16 @@ function DashboardContent(props) {
     setsequenceText(event.target.value);
   };
 
+  const handelChangeExampleMessageContent = (event)=>{
+    event.preventDefault();
+    setMessageExampleContent(event.target.value);
+  }
+
+  const handelChangeMessageDescription = (event)=>{
+    event.preventDefault();
+    setMessageDescription(event.target.value)
+  }
+
   const handleClick = (id) => {
     getsequenceText(id);
   };
@@ -163,9 +249,21 @@ function DashboardContent(props) {
     event.preventDefault();
     putSequenceText(id);
   }
+
+  const handleSelected = (event) =>{
+    event.preventDefault();
+    getMessagebyMessageName(event.target.textContent);
+  }
+
+  const handleSaveMessageDefinition = (event)=>{
+    event.preventDefault();
+    putMessageDefinition(id);
+  }
+
   useEffect(() => {
     console.log("맨 처음 렌더링될 때 한 번만 실행");
     getSidebar();
+    getMessageList();
     mermaid.initialize({ startOnLoad: true });
   }, []);
 
@@ -186,7 +284,7 @@ function DashboardContent(props) {
       try {
         mermaid.mermaidAPI.render("test", lastSequenceText, insertSvglastSequenceText);
       } catch(e){
-        nameInput.current.innerHTML = '';
+        nameInput.current.innerHTML = "";
         console.log(e);
       }
     }
@@ -223,11 +321,17 @@ function DashboardContent(props) {
             >
               {sequenceMenuName}
             </Typography>
-            <IconButton color="inherit">
-              <Badge badgeContent={4} color="secondary">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
+            <Stack spacing={2} sx={{ width: 300 }} className={classes.white}>
+            <Autocomplete
+              id="free-solo-demo"
+              freeSolo
+              options={messageList.map((message) => message.messageName)}
+              onChange={handleSelected}
+              renderInput={(params) => (
+                <TextField {...params} label="messageName" />
+              )}
+            />
+            </Stack>
           </Toolbar>
         </AppBar>
         <Drawer variant="permanent" open={open}>
@@ -245,7 +349,12 @@ function DashboardContent(props) {
           </Toolbar>
           <Divider />
           <List component="nav">
-            <Sidebar sidebarList={sidebarList} onClick={handleClick}></Sidebar>
+            <Sidebar
+              sidebarList={sidebarList}
+              onClick={handleClick}
+              createSequence={createSequenceMenuName}
+              createMessage={createMessageName}
+            ></Sidebar>
             <Divider sx={{ my: 1 }} />
           </List>
         </Drawer>
@@ -262,7 +371,11 @@ function DashboardContent(props) {
           }}
         >
           <Toolbar />
-          <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+
+          <Container
+            maxWidth="lg"
+            sx={{ mt: 4, mb: 4 }}
+          >
             <Grid container spacing={3}>
               {/* mermaid diagram */}
               <Grid item xs={12}>
@@ -283,8 +396,7 @@ function DashboardContent(props) {
                   }}
                 >
                   <Grid container spacing={1}>
-                    <Grid item xs={11} sm={11}>
-                    </Grid>
+                    <Grid item xs={11} sm={11}></Grid>
                     <Grid item xs={1} sm={1}>
                       <IconButton color="inherit" onClick={handleSave}>
                         <SaveIcon />
@@ -302,8 +414,67 @@ function DashboardContent(props) {
                 </Paper>
               </Grid>
             </Grid>
+            
+          </Container>
+          {/* Message Definition */}
+          <Container
+            maxWidth="lg"
+            sx={{ mt: 4, mb: 4 }}
+          >
+            <Grid container spacing={3}>
+              {/* Message Example Content */}
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+                <Grid container spacing={1}>
+                    <Grid item xs={11} sm={11}></Grid>
+                    <Grid item xs={1} sm={1}>
+                      <IconButton color="inherit" onClick={handleSaveMessageDefinition}>
+                        <SaveIcon />
+                      </IconButton>
+                    </Grid>
+                  </Grid>
+                  <TextField
+                    fullWidth
+                    onChange={handelChangeExampleMessageContent}
+                    label="Message Example Content"
+                    id="fullWidth"
+                    multiline
+                    value={messageExampleContent}
+                  ></TextField>
+                </Paper>
+              </Grid>
+              {/* Message Description */}
+              <Grid item xs={12} md={12} lg={12}>
+                <Paper
+                  sx={{
+                    p: 2,
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <Grid container spacing={1}>
+                    <Grid item xs={11} sm={11}></Grid>
+                    <Grid item xs={1} sm={1}>
+                      <IconButton color="inherit" onClick={handleSaveMessageDefinition}>
+                        <SaveIcon />
+                      </IconButton>
+                    </Grid>
+                  </Grid>
+                  <TextField
+                    fullWidth
+                    onChange={handelChangeMessageDescription}
+                    label="Message Description"
+                    id="fullWidth"
+                    multiline
+                    value={messageDescription}
+                  ></TextField>
+                </Paper>
+              </Grid>
+            </Grid>
             <Copyright sx={{ pt: 4 }} />
           </Container>
+
+
         </Box>
       </Box>
     </ThemeProvider>
