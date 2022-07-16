@@ -8,16 +8,22 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 const Sidebar = (props) => {
     const {sidebarList} = props;
     
-    let sl;
+    let sl= null;
     if (sidebarList!==null){
          sl = sidebarList.data.map((sidebar) => (
-            <ListItemButton key={sidebar.id} onClick={ ( e )=>{e.preventDefault(); props.onClick(sidebar.id); }   } >
-              <ListItemIcon>
-                <AssignmentIcon />
-              </ListItemIcon>
-              <ListItemText primary={sidebar.sequenceMenuName} />
-            </ListItemButton>
-          ));
+           <ListItemButton
+             key={sidebar.id}
+             onClick={(e) => {
+               e.preventDefault();
+               props.onClick(sidebar.id);
+             }}
+           >
+             <ListItemIcon>
+               <AssignmentIcon />
+             </ListItemIcon>
+             <ListItemText primary={sidebar.sequenceMenuName} />
+           </ListItemButton>
+         ));
     }
 
   return (

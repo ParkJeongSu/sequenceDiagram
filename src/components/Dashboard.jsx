@@ -17,12 +17,14 @@ import Link from "@mui/material/Link";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import NotificationsIcon from "@mui/icons-material/Notifications";
+import SaveIcon from '@mui/icons-material/Save';
 import { mainListItems, secondaryListItems } from "./listItems";
 import { useEffect } from "react";
 import mermaid from "mermaid";
 import TextField from "@mui/material/TextField";
 import Sidebar from "./sidebar";
 import axios from "axios";
+import { Button } from "@mui/material";
 
 function Copyright(props) {
   return (
@@ -93,7 +95,10 @@ const mdTheme = createTheme();
 function DashboardContent(props) {
   const [open, setOpen] = React.useState(true);
   const [sequenceText, setsequenceText] = React.useState("");
+  const [lastSequenceText, setlastSequenceText] = React.useState("");
   const [sidebarList, setsidebarList] = React.useState(null);
+  const [id, setId] = React.useState(null);
+  const [sequenceMenuName, setsequenceMenuName] = React.useState(null);
 
   const getSidebar = async () => {
     try {
@@ -107,7 +112,25 @@ function DashboardContent(props) {
   const getsequenceText = async (id) => {
     try {
       const response = await axios.get("http://localhost:8080/sequence/" + id);
-      setsequenceText(response);
+      setId(response.data.id);
+      setsequenceMenuName(response.data.sequenceMenuName);
+      setsequenceText(response.data.diagramText);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const putSequenceText = async (id) => {
+    try {
+      let data ={
+        id : id,
+        sequenceMenuName: sequenceMenuName,
+        sequenceText : sequenceText
+      }
+      const response = await axios.put("http://localhost:8080/sequence/" + id,data);
+      setId(response.data.id);
+      setsequenceMenuName(response.data.sequenceMenuName);
+      setsequenceText(response.data.diagramText);
     } catch (e) {
       console.log(e);
     }
@@ -120,38 +143,34 @@ function DashboardContent(props) {
   const nameInput = React.useRef();
   const insertSvg = function (svgCode) {
     nameInput.current.innerHTML = svgCode;
+    setlastSequenceText(sequenceText);
+    //console.log(svgCode);
+  };
+  const insertSvglastSequenceText = function (svgCode) {
+    nameInput.current.innerHTML = svgCode;
     //console.log(svgCode);
   };
   const handleChange = (event) => {
     event.preventDefault();
-
     setsequenceText(event.target.value);
-
-    // let graphDefinition = sequenceText;
-    // mermaid.mermaidAPI.render(
-    //   "graphDiv",
-    //   graphDefinition,
-    //   insertSvg
-    // );
   };
 
   const handleClick = (id) => {
     getsequenceText(id);
-    // let graphDefinition = sequenceText;
-    // mermaid.mermaidAPI.render(
-    //   "graphDiv",
-    //   graphDefinition,
-    //   insertSvg
-    // );
   };
+  
+  const handleSave = (event)=>{
+    event.preventDefault();
+    putSequenceText(id);
+  }
   useEffect(() => {
     console.log("맨 처음 렌더링될 때 한 번만 실행");
+    getSidebar();
     mermaid.initialize({ startOnLoad: true });
   }, []);
 
   useEffect(() => {
     console.log("컴포넌트가 화면에 나타남");
-    // getSidebar();
 
     return () => {
       console.log("컴포넌트가 화면에서 사라짐");
@@ -159,18 +178,15 @@ function DashboardContent(props) {
   });
 
   useEffect(() => {
-    if (sequenceText === undefined || sequenceText === "") 
-    {
-    } 
-    else {
+    try {
+      mermaid.mermaidAPI.render("test", sequenceText, insertSvg);
+
+    } catch (e) {
+      console.log(e);
       try {
-        mermaid.mermaidAPI.render("test", sequenceText, insertSvg);
-        // var parseable = mermaid.mermaidAPI.parse(sequenceText);
-        // if (parseable) 
-        // {
-        //   mermaid.mermaidAPI.render("test", sequenceText, insertSvg);
-        // }
-      } catch (e) {
+        mermaid.mermaidAPI.render("test", lastSequenceText, insertSvglastSequenceText);
+      } catch(e){
+        nameInput.current.innerHTML = '';
         console.log(e);
       }
     }
@@ -205,7 +221,7 @@ function DashboardContent(props) {
               noWrap
               sx={{ flexGrow: 1 }}
             >
-              Sequence Diagram
+              {sequenceMenuName}
             </Typography>
             <IconButton color="inherit">
               <Badge badgeContent={4} color="secondary">
@@ -229,7 +245,7 @@ function DashboardContent(props) {
           </Toolbar>
           <Divider />
           <List component="nav">
-            {/* <Sidebar sidebarList={sidebarList} onClick={handleClick} ></Sidebar> */}
+            <Sidebar sidebarList={sidebarList} onClick={handleClick}></Sidebar>
             <Divider sx={{ my: 1 }} />
           </List>
         </Drawer>
@@ -266,13 +282,23 @@ function DashboardContent(props) {
                     //height: 240,
                   }}
                 >
+                  <Grid container spacing={1}>
+                    <Grid item xs={11} sm={11}>
+                    </Grid>
+                    <Grid item xs={1} sm={1}>
+                      <IconButton color="inherit" onClick={handleSave}>
+                        <SaveIcon />
+                      </IconButton>
+                    </Grid>
+                  </Grid>
                   <TextField
                     fullWidth
                     onChange={handleChange}
                     label="sequenceText"
                     id="fullWidth"
                     multiline
-                  />
+                    value={sequenceText}
+                  ></TextField>
                 </Paper>
               </Grid>
             </Grid>
