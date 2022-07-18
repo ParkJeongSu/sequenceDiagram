@@ -59,6 +59,7 @@ const Sidebar = (props) => {
       else{
         props.createMessage(text);
       }
+      setText("");
     }
 
     let sl= null;

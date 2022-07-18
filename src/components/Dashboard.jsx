@@ -104,7 +104,7 @@ function DashboardContent(props) {
   const [messageId, setMessageId] = React.useState(null);
   const [messageExampleContent, setMessageExampleContent] = React.useState("");
   const [messageDescription, setMessageDescription] = React.useState("");
-
+  let ServerAddress = "http://localhost:8080";
   const nameInput = React.useRef();
   const useStyles = makeStyles({
     white:{
@@ -115,7 +115,7 @@ function DashboardContent(props) {
 
   const getSidebar = async () => {
     try {
-      const response = await axios.get("http://localhost:8080/sequences");
+      const response = await axios.get(ServerAddress+"/sequences");
       setsidebarList(response);
     } catch (e) {
       console.log(e);
@@ -124,7 +124,7 @@ function DashboardContent(props) {
 
   const getsequenceText = async (id) => {
     try {
-      const response = await axios.get("http://localhost:8080/sequence/" + id);
+      const response = await axios.get(ServerAddress+"/sequence/" + id);
       setId(response.data.id);
       setsequenceMenuName(response.data.sequenceMenuName);
       setsequenceText(response.data.diagramText === null ? '' :response.data.diagramText );
@@ -141,7 +141,7 @@ function DashboardContent(props) {
         sequenceMenuName: sequenceMenuName,
         sequenceText : sequenceText
       }
-      const response = await axios.put("http://localhost:8080/sequence/" + id,data);
+      const response = await axios.put(ServerAddress+"/sequence/" + id,data);
       setId(response.data.id);
       setsequenceMenuName(response.data.sequenceMenuName);
       setsequenceText(response.data.diagramText);
@@ -150,17 +150,17 @@ function DashboardContent(props) {
     }
   };
 
-  const putMessageDefinition = async (id) => {
+  const putMessageDefinition = async (messageId) => {
     try {
       let data ={
-        id : id,
+        id : messageId,
         messageExampleContent: messageExampleContent,
         messageDescription : messageDescription
       }
-      const response = await axios.put("http://localhost:8080/message/" + id,data);
+      const response = await axios.put(ServerAddress+"/message/" + messageId,data);
       setMessageId(response.data.id);
-      setMessageExampleContent(response.data.sequenceMenuName);
-      setMessageDescription(response.data.diagramText);
+      setMessageExampleContent(response.data.exampleMessageContent);
+      setMessageDescription(response.data.messageDescription);
     } catch (e) {
       console.log(e);
     }
@@ -171,7 +171,7 @@ function DashboardContent(props) {
       let data ={
         sequenceMenuName: sequenceMenuName
       }
-      const response = await axios.post("http://localhost:8080/sequence/",data);
+      const response = await axios.post(ServerAddress+"/sequence/",data);
       setsidebarList(response);
     } catch (e) {
       console.log(e);
@@ -183,7 +183,7 @@ function DashboardContent(props) {
       let data ={
         messageName: messageName
       }
-      const response = await axios.post("http://localhost:8080/message/",data);
+      const response = await axios.post(ServerAddress+"/message/",data);
       setMessageList(response.data);
     } catch (e) {
       console.log(e);
@@ -192,7 +192,7 @@ function DashboardContent(props) {
 
   const getMessageList = async () => {
     try {
-      const response = await axios.get("http://localhost:8080/messages/");
+      const response = await axios.get(ServerAddress+"/messages/");
       setMessageList(response.data);
       console.log(response);
     } catch (e) {
@@ -202,11 +202,21 @@ function DashboardContent(props) {
   
   const getMessagebyMessageName = async (messageName) => {
     try {
-      const response = await axios.get("http://localhost:8080/message/"+messageName);
-      setMessageId(response.data.id);
-      setMessageExampleContent(response.data.exampleMessageContent);
-      setMessageDescription(response.data.messageDescription)
-      console.log(response);
+      if (messageName==="")
+      {
+        setMessageId("");
+        setMessageExampleContent("");
+        setMessageDescription("");
+      }
+      else
+      {
+        const response = await axios.get(ServerAddress+"/message/"+messageName);
+        setMessageId(response.data.id);
+        setMessageExampleContent(response.data.exampleMessageContent ===null ? "" : response.data.exampleMessageContent);
+        setMessageDescription(response.data.messageDescription=== null ? "" : response.data.messageDescription);
+        console.log(response);
+      }
+      
     } catch (e) {
       console.log(e);
     }
@@ -220,11 +230,11 @@ function DashboardContent(props) {
   const insertSvg = function (svgCode) {
     nameInput.current.innerHTML = svgCode;
     setlastSequenceText(sequenceText);
-    //console.log(svgCode);
+    console.log(svgCode);
   };
   const insertSvglastSequenceText = function (svgCode) {
     nameInput.current.innerHTML = svgCode;
-    //console.log(svgCode);
+    console.log(svgCode);
   };
   const handleChange = (event) => {
     event.preventDefault();
@@ -257,7 +267,7 @@ function DashboardContent(props) {
 
   const handleSaveMessageDefinition = (event)=>{
     event.preventDefault();
-    putMessageDefinition(id);
+    putMessageDefinition(messageId);
   }
 
   useEffect(() => {
@@ -277,14 +287,14 @@ function DashboardContent(props) {
 
   useEffect(() => {
     try {
-      mermaid.mermaidAPI.render("test", sequenceText, insertSvg);
+      mermaid.mermaidAPI.render("diagram", sequenceText, insertSvg);
 
     } catch (e) {
       console.log(e);
       try {
-        mermaid.mermaidAPI.render("test", lastSequenceText, insertSvglastSequenceText);
+        mermaid.mermaidAPI.render("diagram", lastSequenceText, insertSvglastSequenceText);
       } catch(e){
-        nameInput.current.innerHTML = "";
+        nameInput.current.innerHTML = "sequenceDiagram";
         console.log(e);
       }
     }
@@ -380,7 +390,8 @@ function DashboardContent(props) {
               {/* mermaid diagram */}
               <Grid item xs={12}>
                 <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
-                  <div ref={nameInput} className="mermaid">
+                  <div ref={nameInput} className="mermaid"
+                  >
                     {sequenceText}
                   </div>
                 </Paper>
