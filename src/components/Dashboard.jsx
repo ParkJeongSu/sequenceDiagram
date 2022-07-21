@@ -104,7 +104,8 @@ function DashboardContent(props) {
   const [messageId, setMessageId] = React.useState(null);
   const [messageExampleContent, setMessageExampleContent] = React.useState("");
   const [messageDescription, setMessageDescription] = React.useState("");
-  let ServerAddress = "http://localhost:8080";
+  //let ServerAddress = "http://localhost:8080";
+  let ServerAddress = "";
   const nameInput = React.useRef();
   const useStyles = makeStyles({
     white:{
